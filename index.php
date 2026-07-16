@@ -69,7 +69,7 @@
         }
       }
     </style>
-    <title>edvorae.site</title>
+    <title>BH edvorae.site</title>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-0LY0HY7L01"></script>
     <script>
